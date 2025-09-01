@@ -1,0 +1,30 @@
+{
+  "name": "amr-analysis-platform",
+  "version": "1.0.0",
+  "description": "耐药基因分析平台",
+  "main": "simple-proxy.js",
+  "scripts": {
+    "start": "node simple-proxy.js",
+    "dev": "nodemon simple-proxy.js",
+    "galaxy": "node galaxy-proxy.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "form-data": "^4.0.4",
+    "http-proxy-middleware": "^2.0.6",
+    "multer": "^1.4.5-lts.1",
+    "node-fetch": "^2.7.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": [
+    "amr",
+    "bioinformatics",
+    "galaxy",
+    "amrfinder"
+  ],
+  "author": "AMR Analysis Team",
+  "license": "MIT"
+}

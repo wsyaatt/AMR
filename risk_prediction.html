@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>风险预测模块 - 耐药基因分析平台</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+
+        .back-button {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            padding: 12px 25px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-50%) translateX(-5px);
+        }
+
+        .development-status {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .status-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .status-title {
+            font-size: 2rem;
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+
+        .status-description {
+            font-size: 1.1rem;
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 35%;
+            border-radius: 10px;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            font-size: 14px;
+            color: #666;
+            text-align: center;
+        }
+
+        .roadmap {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .roadmap-phase {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .roadmap-phase::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+
+        .phase-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .phase-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-right: 15px;
+            color: white;
+        }
+
+        .phase-current { background: linear-gradient(135deg, #28a745, #20c997); }
+        .phase-next { background: linear-gradient(135deg, #ffc107, #fd7e14); }
+        .phase-future { background: linear-gradient(135deg, #6c757d, #495057); }
+
+        .phase-title {
+            font-size: 1.4rem;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        .phase-timeline {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        .feature-list {
+            list-style: none;
+            margin-bottom: 20px;
+        }
+
+        .feature-list li {
+            padding: 8px 0;
+            color: #555;
+            position: relative;
+            padding-left: 25px;
+        }
+
+        .feature-list li::before {
+            content: '🔹';
+            position: absolute;
+            left: 0;
+        }
+
+        .phase-status {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .status-current {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-planned {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-future {
+            background: #e2e3e5;
+            color: #495057;
+        }
+
+        .demo-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .demo-title {
+            font-size: 1.8rem;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .demo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+        }
+
+        .demo-card {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            border-left: 4px solid #667eea;
+            transition: all 0.3s ease;
+        }
+
+        .demo-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .demo-icon {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .demo-subtitle {
+            font-size: 1.2rem;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .demo-description {
+            color: #666;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .contact-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .contact-title {
+            font-size: 1.5rem;
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+
+        .contact-description {
+            color: #666;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+
+        .contact-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .contact-btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1rem;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #6c757d, #495057);
+            color: white;
+        }
+
+        .contact-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .roadmap {
+                grid-template-columns: 1fr;
+            }
+            
+            .demo-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .back-button {
+                position: static;
+                transform: none;
+                display: inline-block;
+                margin-bottom: 20px;
+            }
+            
+            .contact-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="index.html" class="back-button">← 返回主页</a>
+            <h1>⚠️ 风险预测模块</h1>
+            <p>基于机器学习的耐药风险评估与治疗方案推荐系统</p>
+        </div>
+
+        <!-- 开发状态 -->
+        <div class="development-status">
+            <div class="status-icon">🚧</div>
+            <div class="status-title">模块正在开发中</div>
+            <div class="status-description">
+                我们正在构建一个先进的AI驱动风险预测系统，将结合机器学习算法、临床数据和基因组信息，
+                为医疗决策提供智能化的耐药风险评估和个性化治疗建议。
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill"></div>
+            </div>
+            <div class="progress-text">开发进度: 35% 完成</div>
+        </div>
+
+        <!-- 开发路线图 -->
+        <div class="roadmap">
+            <!-- 第一阶段 -->
+            <div class="roadmap-phase">
+                <div class="phase-header">
+                    <div class="phase-icon phase-current">📊</div>
+                    <div>
+                        <div class="phase-title">第一阶段：数据基础</div>
+                        <div class="phase-timeline">当前阶段 - 2024年1月</div>
+                    </div>
+                </div>
+                <ul class="feature-list">
+                    <li>历史耐药数据收集与整理</li>
+                    <li>基因型-表型关联数据库构建</li>
+                    <li>临床结果数据标准化</li>
+                    <li>数据质量控制与验证</li>
+                    <li>基础统计分析模型</li>
+                </ul>
+                <div class="phase-status status-current">进行中</div>
+            </div>
+
+            <!-- 第二阶段 -->
+            <div class="roadmap-phase">
+                <div class="phase-header">
+                    <div class="phase-icon phase-next">🤖</div>
+                    <div>
+                        <div class="phase-title">第二阶段：AI模型开发</div>
+                        <div class="phase-timeline">计划开始 - 2024年2月</div>
+                    </div>
+                </div>
+                <ul class="feature-list">
+                    <li>机器学习算法选择与优化</li>
+                    <li>深度学习模型训练</li>
+                    <li>预测准确性验证</li>
+                    <li>模型解释性分析</li>
+                    <li>交叉验证与性能评估</li>
+                </ul>
+                <div class="phase-status status-planned">计划中</div>
+            </div>
+
+            <!-- 第三阶段 -->
+            <div class="roadmap-phase">
+                <div class="phase-header">
+                    <div class="phase-icon phase-future">🏥</div>
+                    <div>
+                        <div class="phase-title">第三阶段：临床集成</div>
+                        <div class="phase-timeline">计划开始 - 2024年4月</div>
+                    </div>
+                </div>
+                <ul class="feature-list">
+                    <li>临床决策支持系统</li>
+                    <li>治疗方案推荐引擎</li>
+                    <li>风险分层算法</li>
+                    <li>用户界面设计</li>
+                    <li>临床试验与验证</li>
+                </ul>
+                <div class="phase-status status-future">未来</div>
+            </div>
+        </div>
+
+        <!-- 功能演示 -->
+        <div class="demo-section">
+            <div class="demo-title">🎯 预期功能演示</div>
+            <div class="demo-grid">
+                <div class="demo-card">
+                    <span class="demo-icon">🧬</span>
+                    <div class="demo-subtitle">基因型风险评估</div>
+                    <div class="demo-description">
+                        基于患者基因型数据，预测特定抗生素的耐药风险概率，
+                        提供个性化的用药建议和剂量调整方案。
+                    </div>
+                </div>
+
+                <div class="demo-card">
+                    <span class="demo-icon">📊</span>
+                    <div class="demo-subtitle">实时风险监测</div>
+                    <div class="demo-description">
+                        持续监测患者治疗过程中的耐药风险变化，
+                        及时调整治疗策略，优化临床结果。
+                    </div>
+                </div>
+
+                <div class="demo-card">
+                    <span class="demo-icon">💊</span>
+                    <div class="demo-subtitle">智能用药推荐</div>
+                    <div class="demo-description">
+                        结合患者特征、病原体信息和本地耐药流行病学，
+                        推荐最佳的抗生素选择和治疗方案。
+                    </div>
+                </div>
+
+                <div class="demo-card">
+                    <span class="demo-icon">📈</span>
+                    <div class="demo-subtitle">预后评估模型</div>
+                    <div class="demo-description">
+                        预测治疗成功率、住院时间和并发症风险，
+                        为临床决策提供量化的参考依据。
+                    </div>
+                </div>
+
+                <div class="demo-card">
+                    <span class="demo-icon">🎯</span>
+                    <div class="demo-subtitle">精准医疗支持</div>
+                    <div class="demo-description">
+                        整合多组学数据，实现真正的精准医疗，
+                        为每位患者量身定制最优治疗策略。
+                    </div>
+                </div>
+
+                <div class="demo-card">
+                    <span class="demo-icon">📋</span>
+                    <div class="demo-subtitle">临床决策报告</div>
+                    <div class="demo-description">
+                        生成详细的临床决策支持报告，
+                        包含风险评估、用药建议和监测要点。
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 联系与反馈 -->
+        <div class="contact-section">
+            <div class="contact-title">📞 参与开发与反馈</div>
+            <div class="contact-description">
+                我们欢迎临床医生、研究人员和技术专家参与到这个创新项目中。
+                您的专业建议和反馈对我们非常宝贵，将帮助我们开发出更好的临床决策支持工具。
+            </div>
+            <div class="contact-buttons">
+                <a href="#" class="contact-btn btn-primary" onclick="showInterestForm()">
+                    🤝 参与开发
+                </a>
+                <a href="#" class="contact-btn btn-secondary" onclick="showFeedbackForm()">
+                    💬 提供反馈
+                </a>
+                <a href="#" class="contact-btn btn-secondary" onclick="showUpdates()">
+                    📧 订阅更新
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 模拟进度更新
+        function updateProgress() {
+            const progressFill = document.querySelector('.progress-fill');
+            const progressText = document.querySelector('.progress-text');
+            
+            let progress = 35;
+            const interval = setInterval(() => {
+                if (progress < 40) {
+                    progress += 1;
+                    progressFill.style.width = progress + '%';
+                    progressText.textContent = `开发进度: ${progress}% 完成`;
+                } else {
+                    clearInterval(interval);
+                }
+            }, 100);
+        }
+
+        // 显示参与表单
+        function showInterestForm() {
+            alert(`感谢您对风险预测模块的关注！
+
+我们正在寻找以下领域的专家：
+• 临床医学专家
+• 生物信息学研究员  
+• 机器学习工程师
+• 数据科学家
+• 产品设计师
+
+如果您有兴趣参与开发，请通过以下方式联系我们：
+📧 邮箱: dev@amr-platform.com
+💬 微信: AMR_Platform
+🔗 GitHub: github.com/amr-platform
+
+我们期待与您合作，共同推进精准医疗的发展！`);
+        }
+
+        // 显示反馈表单
+        function showFeedbackForm() {
+            alert(`您的反馈对我们非常重要！
+
+请告诉我们：
+• 您希望看到哪些功能？
+• 您在临床实践中遇到的挑战？
+• 对现有功能的改进建议？
+• 数据安全和隐私方面的关注？
+
+反馈方式：
+📧 邮箱: feedback@amr-platform.com
+📝 在线表单: amr-platform.com/feedback
+💬 用户群: 加入我们的用户交流群
+
+每一条反馈我们都会认真考虑并回复！`);
+        }
+
+        // 显示更新订阅
+        function showUpdates() {
+            alert(`订阅开发进度更新
+
+订阅后您将收到：
+• 每月开发进度报告
+• 新功能预览和测试邀请
+• 技术文档和使用指南
+• 学术会议和培训信息
+
+订阅方式：
+📧 邮箱订阅: newsletter@amr-platform.com
+📱 微信公众号: AMR分析平台
+🐦 Twitter: @AMRPlatform
+📺 YouTube: AMR Platform Channel
+
+我们承诺不会发送垃圾邮件，您可以随时取消订阅。`);
+        }
+
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('⚠️ 风险预测模块页面已加载');
+            
+            // 启动进度动画
+            setTimeout(updateProgress, 1000);
+            
+            // 添加一些交互效果
+            const demoCards = document.querySelectorAll('.demo-card');
+            demoCards.forEach((card, index) => {
+                card.style.animationDelay = `${index * 0.1}s`;
+                card.style.animation = 'fadeInUp 0.6s ease-out forwards';
+            });
+        });
+
+        // 添加淡入动画
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeInUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(30px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
+
