@@ -356,6 +356,74 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- 未来流行预测模块 -->
+                <div class="chart-container" style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%); border: 2px solid #667eea;">
+                    <h3 class="chart-title">🔮 未来流行趋势预测</h3>
+                    <p style="text-align: center; color: #666; margin-bottom: 20px;">
+                        基于历史数据的线性回归分析，预测耐药基因在未来的流行趋势
+                    </p>
+                    <div class="controls">
+                        <div class="control-group">
+                            <label>预测对象:</label>
+                            <select id="predictionType">
+                                <option value="genes">耐药基因</option>
+                                <option value="antibiotics">抗生素耐药</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <label>预测时长:</label>
+                            <select id="predictionMonths">
+                                <option value="3">3个月</option>
+                                <option value="6" selected>6个月</option>
+                                <option value="12">12个月</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <label>选择目标:</label>
+                            <select id="predictionTarget" style="min-width: 200px;">
+                                <option value="">请先选择预测对象</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <button onclick="runPrediction()" style="padding: 10px 24px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 25px; cursor: pointer; font-size: 14px; font-weight: 600; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); transition: all 0.3s ease;">
+                                🔮 开始预测
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="predictionResults" style="display: none; margin-top: 30px;">
+                        <!-- 预测统计卡片 -->
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px;">
+                            <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                                <div style="font-size: 0.85rem; color: #666; margin-bottom: 5px;">当前流行率</div>
+                                <div style="font-size: 2rem; font-weight: bold; color: #667eea;" id="currentRate">--</div>
+                            </div>
+                            <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                                <div style="font-size: 0.85rem; color: #666; margin-bottom: 5px;">预测流行率</div>
+                                <div style="font-size: 2rem; font-weight: bold; color: #764ba2;" id="predictedRate">--</div>
+                            </div>
+                            <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                                <div style="font-size: 0.85rem; color: #666; margin-bottom: 5px;">趋势变化</div>
+                                <div style="font-size: 2rem; font-weight: bold;" id="trendChange">--</div>
+                            </div>
+                            <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                                <div style="font-size: 0.85rem; color: #666; margin-bottom: 5px;">风险等级</div>
+                                <div style="font-size: 2rem; font-weight: bold;" id="riskLevel">--</div>
+                            </div>
+                        </div>
+                        
+                        <!-- 预测图表 -->
+                        <div class="chart-wrapper" style="height: 450px;">
+                            <canvas id="predictionChart"></canvas>
+                        </div>
+                        
+                        <!-- 预测分析 -->
+                        <div id="predictionAnalysis" style="margin-top: 30px; padding: 25px; background: white; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                            <!-- 预测分析内容将在这里动态生成 -->
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -406,7 +474,7 @@
         // 全局变量
         let allData = [];
         let monthlyData = {};
-        let geneChart, antibioticChart, heatmapChart, sampleChart;
+        let geneChart, antibioticChart, heatmapChart, sampleChart, predictionChart;
 
         // 颜色生成器
         function generateColors(count) {
@@ -1229,6 +1297,7 @@
             updateGeneFilter(data);
             updateAntibioticFilter(data);
             updateMonthSelector(monthlyData);
+            updatePredictionTargets(); // 更新预测目标选择器
             
             // 更新统计信息
             updateStats(data, monthlyData);
@@ -1456,6 +1525,11 @@
             
             document.getElementById('topAntibioticsCount').addEventListener('change', () => {
                 createAntibioticChart(monthlyData);
+            });
+            
+            // 预测功能事件监听
+            document.getElementById('predictionType').addEventListener('change', () => {
+                updatePredictionTargets();
             });
         }
 
@@ -2039,6 +2113,533 @@ ${highRiskAntibiotics.map(([antibiotic, count], index) => {
             }
         }
 
+        // ==================== 未来流行趋势预测功能 ====================
+        
+        // 线性回归计算
+        function linearRegression(data) {
+            const n = data.length;
+            if (n === 0) return { slope: 0, intercept: 0, r2: 0 };
+            
+            let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0, sumY2 = 0;
+            
+            data.forEach((point, index) => {
+                const x = index;
+                const y = point;
+                sumX += x;
+                sumY += y;
+                sumXY += x * y;
+                sumX2 += x * x;
+                sumY2 += y * y;
+            });
+            
+            const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+            const intercept = (sumY - slope * sumX) / n;
+            
+            // 计算R²（决定系数）
+            const yMean = sumY / n;
+            let ssTotal = 0, ssResidual = 0;
+            data.forEach((y, x) => {
+                const yPredicted = slope * x + intercept;
+                ssTotal += Math.pow(y - yMean, 2);
+                ssResidual += Math.pow(y - yPredicted, 2);
+            });
+            const r2 = ssTotal === 0 ? 0 : 1 - (ssResidual / ssTotal);
+            
+            return { slope, intercept, r2 };
+        }
+        
+        // 计算移动平均
+        function movingAverage(data, window = 3) {
+            const result = [];
+            for (let i = 0; i < data.length; i++) {
+                const start = Math.max(0, i - window + 1);
+                const values = data.slice(start, i + 1);
+                const avg = values.reduce((sum, val) => sum + val, 0) / values.length;
+                result.push(avg);
+            }
+            return result;
+        }
+        
+        // 预测未来数据
+        function predictFuture(historicalData, months) {
+            const regression = linearRegression(historicalData);
+            const predictions = [];
+            const n = historicalData.length;
+            
+            for (let i = 0; i < months; i++) {
+                const x = n + i;
+                let predicted = regression.slope * x + regression.intercept;
+                // 限制在0-100之间（百分比）
+                predicted = Math.max(0, Math.min(100, predicted));
+                predictions.push(predicted);
+            }
+            
+            return {
+                predictions,
+                regression,
+                confidence: Math.abs(regression.r2)
+            };
+        }
+        
+        // 更新预测目标选择器
+        function updatePredictionTargets() {
+            const predictionType = document.getElementById('predictionType').value;
+            const targetSelect = document.getElementById('predictionTarget');
+            
+            if (!allData || allData.length === 0) {
+                targetSelect.innerHTML = '<option value="">请先加载数据</option>';
+                return;
+            }
+            
+            if (predictionType === 'genes') {
+                // 获取所有基因并按出现频率排序
+                const geneFreq = {};
+                allData.forEach(record => {
+                    geneFreq[record.gene] = (geneFreq[record.gene] || 0) + 1;
+                });
+                
+                const sortedGenes = Object.entries(geneFreq)
+                    .sort((a, b) => b[1] - a[1]);
+                    // 显示所有基因
+                
+                targetSelect.innerHTML = `<option value="">请选择基因（共${sortedGenes.length}个）</option>`;
+                
+                sortedGenes.forEach(([gene, count]) => {
+                    const option = document.createElement('option');
+                    option.value = gene;
+                    option.textContent = `${gene} (${count}次检出)`;
+                    targetSelect.appendChild(option);
+                });
+            } else {
+                // 获取所有抗生素并按出现频率排序
+                const antibioticFreq = {};
+                allData.forEach(record => {
+                    antibioticFreq[record.antibiotic] = (antibioticFreq[record.antibiotic] || 0) + 1;
+                });
+                
+                const sortedAntibiotics = Object.entries(antibioticFreq)
+                    .sort((a, b) => b[1] - a[1]);
+                    // 显示所有抗生素
+                
+                targetSelect.innerHTML = `<option value="">请选择抗生素（共${sortedAntibiotics.length}个）</option>`;
+                
+                sortedAntibiotics.forEach(([antibiotic, count]) => {
+                    const option = document.createElement('option');
+                    option.value = antibiotic;
+                    option.textContent = `${antibiotic} (${count}次检出)`;
+                    targetSelect.appendChild(option);
+                });
+            }
+        }
+        
+        // 执行预测
+        function runPrediction() {
+            const predictionType = document.getElementById('predictionType').value;
+            const predictionMonths = parseInt(document.getElementById('predictionMonths').value);
+            const target = document.getElementById('predictionTarget').value;
+            
+            if (!target) {
+                alert('请选择要预测的目标');
+                return;
+            }
+            
+            // 获取历史数据
+            const months = Object.keys(monthlyData).sort();
+            const historicalRates = [];
+            
+            months.forEach(month => {
+                const monthStats = monthlyData[month];
+                let count = 0;
+                
+                if (predictionType === 'genes') {
+                    count = monthStats.genes[target] || 0;
+                } else {
+                    count = monthStats.antibiotics[target] || 0;
+                }
+                
+                const rate = monthStats.totalSamples > 0 ? 
+                    (count / monthStats.totalSamples) * 100 : 0;
+                historicalRates.push(rate);
+            });
+            
+            // 进行预测
+            const predictionResult = predictFuture(historicalRates, predictionMonths);
+            
+            // 生成预测月份
+            const lastMonth = months[months.length - 1];
+            const lastDate = new Date(lastMonth + '-01');
+            const futureMonths = [];
+            
+            for (let i = 1; i <= predictionMonths; i++) {
+                const futureDate = new Date(lastDate);
+                futureDate.setMonth(futureDate.getMonth() + i);
+                futureMonths.push(futureDate.toISOString().substring(0, 7));
+            }
+            
+            // 显示预测结果
+            displayPredictionResults(
+                target,
+                predictionType,
+                months,
+                historicalRates,
+                futureMonths,
+                predictionResult
+            );
+        }
+        
+        // 显示预测结果
+        function displayPredictionResults(target, type, historicalMonths, historicalRates, 
+                                         futureMonths, predictionResult) {
+            const resultsDiv = document.getElementById('predictionResults');
+            resultsDiv.style.display = 'block';
+            
+            // 计算统计信息
+            const currentRate = historicalRates[historicalRates.length - 1];
+            const predictedRate = predictionResult.predictions[predictionResult.predictions.length - 1];
+            const trendChange = predictedRate - currentRate;
+            const trendPercentChange = currentRate > 0 ? (trendChange / currentRate) * 100 : 0;
+            
+            // 更新统计卡片
+            document.getElementById('currentRate').textContent = currentRate.toFixed(1) + '%';
+            document.getElementById('predictedRate').textContent = predictedRate.toFixed(1) + '%';
+            
+            const trendElement = document.getElementById('trendChange');
+            const trendIcon = trendChange > 0 ? '↑' : (trendChange < 0 ? '↓' : '→');
+            const trendColor = trendChange > 5 ? '#dc3545' : 
+                              (trendChange < -5 ? '#28a745' : '#ffc107');
+            trendElement.textContent = trendIcon + ' ' + trendChange.toFixed(1) + '%';
+            trendElement.style.color = trendColor;
+            
+            // 风险评级
+            const riskElement = document.getElementById('riskLevel');
+            let riskText, riskColor;
+            if (predictedRate > 70) {
+                riskText = '⚠️ 极高';
+                riskColor = '#dc3545';
+            } else if (predictedRate > 50) {
+                riskText = '⚠️ 高';
+                riskColor = '#fd7e14';
+            } else if (predictedRate > 30) {
+                riskText = '⚡ 中';
+                riskColor = '#ffc107';
+            } else if (predictedRate > 15) {
+                riskText = '✓ 低';
+                riskColor = '#17a2b8';
+            } else {
+                riskText = '✓ 极低';
+                riskColor = '#28a745';
+            }
+            riskElement.textContent = riskText;
+            riskElement.style.color = riskColor;
+            
+            // 创建预测图表
+            createPredictionChart(target, type, historicalMonths, historicalRates, 
+                                futureMonths, predictionResult);
+            
+            // 生成预测分析
+            generatePredictionAnalysis(target, type, currentRate, predictedRate, 
+                                      trendChange, trendPercentChange, 
+                                      predictionResult.confidence);
+            
+            // 滚动到结果
+            resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        
+        // 创建预测图表
+        function createPredictionChart(target, type, historicalMonths, historicalRates, 
+                                      futureMonths, predictionResult) {
+            const ctx = document.getElementById('predictionChart').getContext('2d');
+            
+            // 计算移动平均线（平滑历史数据）
+            const smoothedRates = movingAverage(historicalRates, 3);
+            
+            // 组合所有月份
+            const allMonths = [...historicalMonths, ...futureMonths];
+            
+            // 为预测数据添加置信区间
+            const upperBound = predictionResult.predictions.map(p => 
+                Math.min(100, p + (1 - predictionResult.confidence) * 15)
+            );
+            const lowerBound = predictionResult.predictions.map(p => 
+                Math.max(0, p - (1 - predictionResult.confidence) * 15)
+            );
+            
+            if (predictionChart) {
+                predictionChart.destroy();
+            }
+            
+            const typeLabel = type === 'genes' ? '耐药基因' : '抗生素耐药';
+            
+            predictionChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: allMonths,
+                    datasets: [
+                        {
+                            label: '历史数据',
+                            data: [...historicalRates, ...Array(futureMonths.length).fill(null)],
+                            borderColor: '#667eea',
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            borderWidth: 3,
+                            pointRadius: 5,
+                            pointHoverRadius: 7,
+                            fill: false,
+                            tension: 0.1
+                        },
+                        {
+                            label: '平滑趋势',
+                            data: [...smoothedRates, ...Array(futureMonths.length).fill(null)],
+                            borderColor: '#17a2b8',
+                            backgroundColor: 'rgba(23, 162, 184, 0.1)',
+                            borderWidth: 2,
+                            pointRadius: 3,
+                            borderDash: [5, 5],
+                            fill: false,
+                            tension: 0.3
+                        },
+                        {
+                            label: '预测值',
+                            data: [...Array(historicalMonths.length).fill(null), 
+                                   historicalRates[historicalRates.length - 1], 
+                                   ...predictionResult.predictions],
+                            borderColor: '#764ba2',
+                            backgroundColor: 'rgba(118, 75, 162, 0.1)',
+                            borderWidth: 3,
+                            pointRadius: 5,
+                            pointHoverRadius: 7,
+                            borderDash: [10, 5],
+                            fill: false,
+                            tension: 0.1
+                        },
+                        {
+                            label: '置信区间上限',
+                            data: [...Array(historicalMonths.length).fill(null), 
+                                   historicalRates[historicalRates.length - 1],
+                                   ...upperBound],
+                            borderColor: 'rgba(220, 53, 69, 0.3)',
+                            backgroundColor: 'rgba(220, 53, 69, 0.05)',
+                            borderWidth: 1,
+                            pointRadius: 0,
+                            borderDash: [2, 2],
+                            fill: '+1',
+                            tension: 0.3
+                        },
+                        {
+                            label: '置信区间下限',
+                            data: [...Array(historicalMonths.length).fill(null), 
+                                   historicalRates[historicalRates.length - 1],
+                                   ...lowerBound],
+                            borderColor: 'rgba(40, 167, 69, 0.3)',
+                            backgroundColor: 'rgba(40, 167, 69, 0.05)',
+                            borderWidth: 1,
+                            pointRadius: 0,
+                            borderDash: [2, 2],
+                            fill: false,
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: `${target} 的${typeLabel}流行趋势预测`,
+                            font: { size: 18, weight: 'bold' },
+                            padding: 20
+                        },
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 15,
+                                font: { size: 11 }
+                            }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                title: function(context) {
+                                    const month = context[0].label;
+                                    const isPrediction = historicalMonths.indexOf(month) === -1;
+                                    return month + (isPrediction ? ' (预测)' : ' (历史)');
+                                },
+                                label: function(context) {
+                                    const label = context.dataset.label;
+                                    const value = context.parsed.y;
+                                    return value !== null ? 
+                                        `${label}: ${value.toFixed(1)}%` : '';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: '流行率 (%)',
+                                font: { size: 14, weight: 'bold' }
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: '时间（月份）',
+                                font: { size: 14, weight: 'bold' }
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+        }
+        
+        // 生成预测分析报告
+        function generatePredictionAnalysis(target, type, currentRate, predictedRate, 
+                                           trendChange, trendPercentChange, confidence) {
+            const analysisDiv = document.getElementById('predictionAnalysis');
+            const typeLabel = type === 'genes' ? '耐药基因' : '抗生素耐药类型';
+            const confidencePercent = (confidence * 100).toFixed(1);
+            
+            let trendDescription, trendIcon, trendColor;
+            if (trendChange > 10) {
+                trendDescription = '显著上升';
+                trendIcon = '📈';
+                trendColor = '#dc3545';
+            } else if (trendChange > 5) {
+                trendDescription = '温和上升';
+                trendIcon = '📊';
+                trendColor = '#fd7e14';
+            } else if (trendChange > -5) {
+                trendDescription = '保持稳定';
+                trendIcon = '➡️';
+                trendColor = '#17a2b8';
+            } else if (trendChange > -10) {
+                trendDescription = '温和下降';
+                trendIcon = '📉';
+                trendColor = '#28a745';
+            } else {
+                trendDescription = '显著下降';
+                trendIcon = '⬇️';
+                trendColor = '#28a745';
+            }
+            
+            let reliabilityText, reliabilityColor;
+            if (confidence > 0.7) {
+                reliabilityText = '高';
+                reliabilityColor = '#28a745';
+            } else if (confidence > 0.4) {
+                reliabilityText = '中等';
+                reliabilityColor = '#ffc107';
+            } else {
+                reliabilityText = '较低';
+                reliabilityColor = '#dc3545';
+            }
+            
+            // 生成建议
+            let recommendations = [];
+            if (predictedRate > 50 && trendChange > 5) {
+                recommendations.push('⚠️ <strong>高度警惕</strong>：预测流行率较高且呈上升趋势，建议立即采取干预措施');
+                if (type === 'antibiotics') {
+                    recommendations.push('💊 <strong>用药建议</strong>：避免首选使用该类抗生素，需进行药敏试验指导');
+                }
+                recommendations.push('📊 <strong>监测加强</strong>：增加监测频率，密切关注流行趋势变化');
+            } else if (predictedRate > 30) {
+                recommendations.push('⚡ <strong>持续关注</strong>：流行率处于中等水平，需要持续监测');
+                if (type === 'antibiotics') {
+                    recommendations.push('💊 <strong>用药建议</strong>：谨慎使用该类抗生素，建议进行药敏试验');
+                }
+            } else if (trendChange < -5) {
+                recommendations.push('✅ <strong>积极信号</strong>：流行率呈下降趋势，当前措施有效');
+                recommendations.push('🔄 <strong>持续巩固</strong>：继续执行现有防控策略');
+            } else {
+                recommendations.push('✓ <strong>低风险</strong>：流行率较低且趋势平稳');
+                recommendations.push('👁️ <strong>常规监测</strong>：维持常规监测即可');
+            }
+            
+            if (confidence < 0.5) {
+                recommendations.push('⚠️ <strong>数据质量</strong>：预测可靠性较低，建议收集更多数据以提高预测准确性');
+            }
+            
+            const html = `
+                <h4 style="color: #333; margin-bottom: 20px; font-size: 1.3rem;">
+                    📊 预测分析报告 - ${target}
+                </h4>
+                
+                <div style="display: grid; gap: 20px;">
+                    <!-- 趋势分析 -->
+                    <div style="padding: 20px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid ${trendColor};">
+                        <h5 style="color: #333; margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
+                            ${trendIcon} 趋势分析
+                        </h5>
+                        <p style="color: #666; line-height: 1.8; margin-bottom: 10px;">
+                            该${typeLabel}的流行率预计将呈现<strong style="color: ${trendColor};">${trendDescription}</strong>趋势，
+                            从当前的 <strong>${currentRate.toFixed(1)}%</strong> 
+                            ${trendChange > 0 ? '上升' : trendChange < 0 ? '下降' : '维持'}到 
+                            <strong>${predictedRate.toFixed(1)}%</strong>，
+                            变化幅度为 <strong style="color: ${trendColor};">${Math.abs(trendChange).toFixed(1)}个百分点</strong>
+                            ${trendPercentChange !== 0 ? `（相对变化 ${trendPercentChange > 0 ? '+' : ''}${trendPercentChange.toFixed(1)}%）` : ''}。
+                        </p>
+                    </div>
+                    
+                    <!-- 预测可靠性 -->
+                    <div style="padding: 20px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid ${reliabilityColor};">
+                        <h5 style="color: #333; margin-bottom: 10px;">
+                            🎯 预测可靠性
+                        </h5>
+                        <p style="color: #666; line-height: 1.8;">
+                            基于历史数据的线性回归分析，模型拟合度（R²）为 <strong>${confidencePercent}%</strong>，
+                            预测可靠性评级为<strong style="color: ${reliabilityColor};">${reliabilityText}</strong>。
+                            ${confidence > 0.7 ? '历史数据呈现较为明显的线性趋势，预测结果具有较高参考价值。' :
+                              confidence > 0.4 ? '历史数据存在一定波动，预测结果仅供参考。' :
+                              '历史数据波动较大，建议结合其他分析方法综合判断。'}
+                        </p>
+                    </div>
+                    
+                    <!-- 行动建议 -->
+                    <div style="padding: 20px; background: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107;">
+                        <h5 style="color: #333; margin-bottom: 15px;">
+                            💡 行动建议
+                        </h5>
+                        <div style="color: #666; line-height: 2;">
+                            ${recommendations.map(rec => `<div style="margin-bottom: 10px;">• ${rec}</div>`).join('')}
+                        </div>
+                    </div>
+                    
+                    <!-- 技术说明 -->
+                    <div style="padding: 15px; background: #e9ecef; border-radius: 8px; font-size: 0.9rem;">
+                        <details>
+                            <summary style="cursor: pointer; color: #666; font-weight: 600;">
+                                📋 技术说明与方法论
+                            </summary>
+                            <div style="margin-top: 15px; color: #666; line-height: 1.8;">
+                                <p><strong>预测方法：</strong>本预测采用线性回归分析法，基于历史月度流行率数据建立趋势模型。</p>
+                                <p style="margin-top: 10px;"><strong>置信区间：</strong>图表中的阴影区域表示预测的置信区间，区间宽度与模型可靠性负相关。</p>
+                                <p style="margin-top: 10px;"><strong>适用范围：</strong>短期预测（3-6个月）具有较高参考价值，长期预测需结合其他因素综合判断。</p>
+                                <p style="margin-top: 10px;"><strong>局限性：</strong>预测假设未来趋势延续历史模式，未考虑突发事件、政策干预等外部因素的影响。</p>
+                            </div>
+                        </details>
+                    </div>
+                </div>
+            `;
+            
+            analysisDiv.innerHTML = html;
+        }
+        
         // 页面加载完成后初始化
         document.addEventListener('DOMContentLoaded', initApp);
     </script>

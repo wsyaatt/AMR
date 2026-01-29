@@ -428,7 +428,7 @@
         
         <div class="news-ticker">
             <div class="news-content">
-                📢 平台已支持1000+样本数据分析 | 🔬 专业生物信息学分析平台 | 📊 月度流行趋势分析功能优化 | 🚀 系统性能持续提升
+                📢 平台已支持1000+样本数据分析 | 🔬 新增新耐药机制预警功能 | 📊 月度流行趋势分析功能优化 | 🚀 智能识别潜在新型耐药机制 | ⚠️ 为科研提供重要线索
             </div>
         </div>
     </div>
@@ -547,8 +547,37 @@
                 </div>
             </div>
 
-            <!-- 风险预测 -->
+            <!-- 新耐药机制预警 -->
             <div class="module-card">
+                <div class="module-header">
+                    <div class="module-icon">🔬</div>
+                    <div>
+                        <div class="module-title">新耐药机制预警</div>
+                        <span class="module-status status-available">✅ 可用</span>
+                    </div>
+                </div>
+                <div class="module-description">
+                    智能识别有耐药表型但缺乏已知耐药基因的菌株，预警潜在的新型耐药机制，为科研提供重要线索。
+                </div>
+                <ul class="module-features">
+                    <li>自动识别异常耐药表型</li>
+                    <li>抗生素类别统计图表</li>
+                    <li>风险等级智能评估</li>
+                    <li>研究优先级推荐</li>
+                    <li>详细案例列表筛选</li>
+                </ul>
+                <div class="module-actions">
+                    <a href="new_mechanism_alert.html" class="btn btn-primary">
+                        🔬 查看预警
+                    </a>
+                    <button class="btn btn-secondary" onclick="showDemo('mechanism')">
+                        📊 功能说明
+                    </button>
+                </div>
+            </div>
+
+            <!-- 风险预测 -->
+            <div class="module-card" style="display: none;">
                 <div class="module-header">
                     <div class="module-icon">⚠️</div>
                     <div>
@@ -599,7 +628,8 @@
             const demos = {
                 trend: '流行趋势分析演示：\n\n1. 选择AMRFinder数据文件夹\n2. 系统自动处理528个TSV文件\n3. 生成月度流行趋势图表\n4. 提供医疗决策建议\n\n点击"开始分析"体验完整功能！',
                 annotation: '基因组注释使用指南：\n\n1. 上传FASTA格式基因组文件\n2. 选择合适的细菌类型\n3. 启动专业AMRFinder分析\n4. 实时查看分析进度\n5. 下载完整结果报告\n\n支持的细菌类型：大肠杆菌、沙门氏菌、克雷伯氏菌等',
-                amr: '耐药基因数据库示例：\n\n• 集成四大权威数据库\n• 收录5000+种耐药基因\n• 涵盖18+种抗生素类别\n• 包含自主测序数据300+基因\n• 提供详细临床指导建议\n\n点击"查看数据库"获取完整信息！'
+                amr: '耐药基因数据库示例：\n\n• 集成四大权威数据库\n• 收录5000+种耐药基因\n• 涵盖18+种抗生素类别\n• 包含自主测序数据300+基因\n• 提供详细临床指导建议\n\n点击"查看数据库"获取完整信息！',
+                mechanism: '新耐药机制预警功能：\n\n🔬 核心功能\n• 自动识别有耐药表型但无已知耐药基因的菌株\n• 这些案例可能代表新型耐药机制\n\n📊 可视化展示\n• 按抗生素类别统计预警数量柱状图\n• 详细预警案例列表和分析\n\n⚠️ 智能分析\n• 风险等级自动评估\n• 研究优先级推荐\n• 支持筛选和搜索\n\n点击"查看预警"开始分析！'
             };
             
             alert(demos[module] || '演示信息准备中...');
@@ -613,8 +643,9 @@
         // 页面加载完成后执行
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🧬 耐药基因分析平台已加载');
-            console.log('📊 支持功能：流行趋势分析、基因组注释、耐药基因数据库');
+            console.log('📊 支持功能：流行趋势分析、基因组注释、耐药基因数据库、新耐药机制预警');
             console.log('🔗 分析引擎：专业AMRFinder算法');
+            console.log('🔬 新功能：智能识别潜在新型耐药机制');
         });
 
         // 添加一些交互效果
